@@ -1,11 +1,17 @@
+/* eslint-disable react/react-in-jsx-scope */
 /* eslint-disable no-use-before-define */
-import React, { Component } from 'react';
-// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+// eslint-disable-next-line no-unused-vars
+import Rect, { Component } from 'react';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry';
 // eslint-disable-next-line import/no-named-default
 import { default as Polygons } from './polygons.json';
 import './App.css';
 // eslint-disable-next-line import/order
-import * as THREE from 'three';
+import {
+  Mesh, MeshBasicMaterial, OrthographicCamera, PerspectiveCamera,
+  PlaneGeometry, PointsMaterial, Scene, Vector3, WebGLRenderer,
+} from 'three';
 
 type state = {
   z: number;
@@ -29,14 +35,14 @@ class App extends Component<{}, state> {
 
   private scenePolygons : any[] = [];
 
-  geometry = new THREE.PlaneGeometry();
+  geometry = new PlaneGeometry();
 
   constructor(props: any) {
     super(props);
 
     this.state = {
       z: 0,
-      draw: true,
+      draw: false,
     };
 
     this.onValueChange = this.onValueChange.bind(this);
@@ -53,26 +59,28 @@ class App extends Component<{}, state> {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight - 50;
 
-    this.renderer = new THREE.WebGLRenderer({
+    this.renderer = new WebGLRenderer({
       canvas: this.canvas,
+      antialias: true,
     });
 
-    this.scene = new THREE.Scene();
+    this.scene = new Scene();
 
-    this.camera = new THREE.PerspectiveCamera(
-      45,
+    this.camera = new PerspectiveCamera(
+      90,
       this.canvas?.clientWidth / this.canvas?.clientHeight,
       1,
       100000,
     );
-    this.camera.position.z = 400;
+
+    this.camera.position.z = 20;
 
     this.canvas.onmousedown = this.onMouseDown;
     this.canvas.onmousemove = this.onMouseMove;
     this.canvas.onmouseup = this.onMouseUP;
 
-    // this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    // this.controls.update();
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls?.update();
 
     this.drawPolygons();
     this.animate();
@@ -85,22 +93,23 @@ class App extends Component<{}, state> {
 
   onMouseDown(e: MouseEvent) {
     const { draw } = this.state;
-
+    this.controls = null;
     if (draw && !this.rectangle) {
       // code to start drawing
-      this.startMousePosition = new THREE.Vector3(e.pageX, e.pageY, 0);
+      this.startMousePosition = new Vector3(e.pageX, e.pageY, 0);
     }
   }
 
   onMouseUP() {
     this.startMousePosition = null;
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
   }
 
   onMouseMove(e: MouseEvent) {
     const { draw } = this.state;
 
     if (draw && this.startMousePosition) {
-      const endMousePosition = new THREE.Vector3(e.pageX, e.pageY, 0);
+      const endMousePosition = new Vector3(e.pageX, e.pageY, 0);
 
       const differenceY = Math.abs(
         this.startMousePosition.y - endMousePosition.y,
@@ -109,18 +118,17 @@ class App extends Component<{}, state> {
         this.startMousePosition.x - endMousePosition.x,
       );
 
-      const floorGeometryNew = new THREE.PlaneGeometry(differenceX, differenceY);
+      const floorGeometryNew = new PlaneGeometry(differenceX, differenceY);
       floorGeometryNew.rotateX(-Math.PI / 2);
 
-      const tempMaterial = new THREE.MeshBasicMaterial({
+      const tempMaterial = new MeshBasicMaterial({
         color: 'purple',
       });
-      this.rectangle = new THREE.Mesh(floorGeometryNew, tempMaterial);
-      // var x = this.startMousePosition.x;
-      // var y = this.startMousePosition.y;
-      const { z } = this.startMousePosition;
+      this.rectangle = new Mesh(floorGeometryNew, tempMaterial);
+
+      const { x, y, z } = this.startMousePosition;
       this.setState({ z });
-      this.rectangle.position.set(0, 0, 0);
+      this.rectangle.position.set((x - (this.canvas?.clientWidth / 2)), -y, z);
       this.scene.add(this.rectangle);
     }
   }
@@ -128,12 +136,12 @@ class App extends Component<{}, state> {
   animate() {
     requestAnimationFrame(this.animate);
     // required if controls.enableDamping or controls.autoRotate are set to true
-    // this.controls.update();
+    this.controls?.update();
     this.renderer.render(this.scene, this.camera);
   }
 
   drawRect() {
-    this.camera = new THREE.OrthographicCamera(
+    this.camera = new OrthographicCamera(
       this.canvas?.clientWidth / -2,
       this.canvas?.clientWidth / 2,
       this.canvas?.clientHeight / -2,
@@ -145,21 +153,17 @@ class App extends Component<{}, state> {
   }
 
   drawPolygons() {
-    Polygons.forEach((polygon) => {
-      const material = new THREE.LineBasicMaterial({
-        color: 'red',
-      });
+    const material = new PointsMaterial({
+      color: 'red',
+    });
 
-      const shape = new THREE.Shape();
-      polygon.bounding_points.forEach((point, index) => {
-        if (index === 0) {
-          shape.moveTo(20 * point.x, point.y * 20);
-        } else {
-          shape.lineTo(20 * point.x, point.y * 20);
-        }
+    Polygons.forEach((polygon) => {
+      const points: any = [];
+      polygon.bounding_points.forEach((point) => {
+        points.push(new Vector3(point.x, point.y, point.z));
       });
-      const geometry = new THREE.ShapeGeometry(shape);
-      const polygonObj = new THREE.Mesh(geometry, material);
+      const geometry = new ConvexGeometry(points);
+      const polygonObj = new Mesh(geometry, material);
       this.scenePolygons.push(polygonObj);
       this.scene.add(polygonObj);
     });
@@ -167,7 +171,13 @@ class App extends Component<{}, state> {
 
   // eslint-disable-next-line class-methods-use-this
   projectRect() {
-    // this.scenePolygons.forEach((polygon) => {  });
+    this.scenePolygons.forEach((polygon) => {
+      const rect: any = this.rectangle.clone();
+      rect.position.x = polygon.position.x;
+      rect.position.y = polygon.position.y;
+      rect.position.z = polygon.position.z;
+      this.scene.add(rect);
+    });
   }
 
   render() {
