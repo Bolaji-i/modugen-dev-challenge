@@ -1,0 +1,7 @@
+# Unrequired files
+Dockerfile
+.dockerignore
+.gitignore
+
+# Artifacts used during build
+node_modeules
