@@ -1,16 +1,16 @@
-name: NodeJS with Grunt
+name: NodeJS Pipeline Modugen-dev
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [14.x]
     
     steps:
     - uses: actions/checkout@v2
@@ -23,6 +23,7 @@ jobs:
     - name: Build
       run: |
         npm install
+        npm run lint
         
   docker:
     runs-on: ubuntu-latest
