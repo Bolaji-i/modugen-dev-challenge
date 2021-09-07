@@ -1,6 +1,11 @@
+/* eslint-disable import/no-unresolved */
+/* eslint-disable import/extensions */
+/* eslint-disable react/jsx-filename-extension */
+/* eslint-disable no-use-before-define */
 import * as React from 'react';
-import * as ReactDOM from 'react-dom'
-import App from "./App";
+import * as ReactDOM from 'react-dom';
+// eslint-disable import/no-unresolved
+import App from './App';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
@@ -8,7 +13,7 @@ ReactDOM.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-  document.getElementById('root')
+  document.getElementById('root'),
 );
 
 // If you want to start measuring performance in your app, pass a function
